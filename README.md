@@ -66,13 +66,16 @@ python code-flow.py
 
 ### Generate new key pair and configuration request
 
-To generate new key pair remove the file [code-flow-with-jwsreq.jwk](code-flow-with-jwsreq.jwk). Then run [generate-jwsreq-registration-request.py](generate-jwsreq-registration-request.py).
+To generate new key pair first remove the file [code-flow-with-jwsreq.jwk](code-flow-with-jwsreq.jwk), then run [generate-jwsreq-registration-request.py](generate-jwsreq-registration-request.py).
 
 ```text
+rm code-flow-with-jwsreq.jwk
 python generate-jwsreq-registration-request.py 
 ```
 
-The command will output a configuration request that you can send to your OpenID Provider, for example
+The command will output a configuration request that you can send to your OpenID Provider. The configuration request contains settings to enable JWT secured request, JWT client authentication and encrypted ID token. If your OpenID Provider does not accept configuration request then you need to make sure the provider is configured with these features enabled. 
+
+A sample configuration request
 
 ```json
 {
@@ -117,9 +120,22 @@ The command will output a configuration request that you can send to your OpenID
 
 When you register this app, your OpenID Provider will return a client id. A client secret is not necessary as this client uses asymmetric keys for authentication.
 
-If your OpenID Provider returns a configuration response then write it to file [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json). If not then create configuration response manually by adding client_id parameter to configuration request.
+If your OpenID Provider returns a configuration response then put this into file [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json). 
 
-Finally, in [code-flow.py](code-flow.py#L14) replace address with your OpenID Provider's configuration metadata address.
+If not then create configuration response manually with the client id from your OpenID Provider.
+
+Sample configuration response from OpenID Provider. Put this into [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json)
+
+```py
+{
+    "redirect_uris":  [
+                          "http://localhost/redirect"
+                      ],
+    "client_id":  "69ec4f7e-07f7-426d-a560-55fd8969caac"
+}
+```
+
+In [code-flow.py](code-flow.py#L14) replace address with your OpenID Provider's configuration metadata address.
 
 ```py
 r = requests.get(
