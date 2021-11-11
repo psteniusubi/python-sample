@@ -15,7 +15,7 @@ r = requests.get(
 r.raise_for_status()
 provider = r.json()
 
-# client configuration (using a well known public client on example.ubidemo.com)
+# client configuration 
 
 with open("code-flow.json", "r", encoding="utf-8-sig") as fp:
     client = json.loads(fp.read())
