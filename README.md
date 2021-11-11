@@ -1,1 +1,1 @@
-# python-sample
+# OpenID Connect with Python
