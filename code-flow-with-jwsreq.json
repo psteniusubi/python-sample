@@ -1,0 +1,39 @@
+{
+    "code_challenge_method":  "S256",
+    "require_signed_request_object":  true,
+    "request_object_signing_alg":  "RS256",
+    "request_object_encryption_alg":  "RSA-OAEP",
+    "token_endpoint_auth_method":  "private_key_jwt",
+    "token_endpoint_auth_signing_alg":  "RS256",
+    "id_token_encrypted_response_alg":  "RSA-OAEP",
+    "userinfo_signed_response_alg":  "RS256",
+    "userinfo_encrypted_response_alg":  "RSA-OAEP",
+    "jwks":  {
+                 "keys":  [
+                              {
+                                  "kty":  "RSA",
+                                  "use":  "sig",
+                                  "kid":  "870c4fca-817e-4021-a90a-2e6a16fe1611",
+                                  "n":  "vSjZg25Bb_-UFOrvNAhnBsJea0Uk8qP51qvysF7TH_ItA7QQZioTI0lt2ZYDIaWizV9lH-NnVXWOOK6jxnRInsU4OFCwwsU-rmAOG8pnJw7iogg9dtzkfXLFvPqH1FasBIchTO3wyQSmvhzj8ItzQ-4zyJSeH7sHGxQP0gYHjNdR5Gs_4mraJ8FnkCmUxu3ik3Mr4Fj1zA6DkaHBJSUwNrlzKoE-EUf_EAvEom2mRDmoSw7Ia0AtKpzJU3GK83gtIy6AD-WUFOBAI7N8KZWoJXWqeIU6coJwOXyIJ9FXdykqZDAuV5A5Xn22LpIqc-NXo8XwBWJSzfy2YmMwi45v0Q",
+                                  "e":  "AQAB"
+                              },
+                              {
+                                  "kty":  "RSA",
+                                  "use":  "enc",
+                                  "kid":  "7799e70a-53c1-46c6-b4b5-39790deea997",
+                                  "n":  "p7gJavUfzo1bfnD16ADMbd2clWdkCnqcsPK3KoT5Xs-9iKmjJN_hG5Je5s8ATRInGhFR2vYKu4GxjuAnbNjcuNNaHiyo-PexEZaYsS6yT40lhQj53L1r8ML76KTvcdklWmfCJ67OeDzPRlZO_TnEqZsJY2dzTloT_wQUqepXPeYQ19k7L_14FB1Rnhq4x0PU-JudJL25HrtH459JAtrLQQ9lDfRqEt1IWnWP4TJTdajYpY4nyeOstGFEvMa1kvEaweoDEEkkjqXRiBras9IfDt2F26wsInydPHnr7gYMvvoANuPX5lzXCsPjoo-wogeiOrAZvGQsaRd_q7f4vmkdPw",
+                                  "e":  "AQAB"
+                              }
+                          ]
+             },
+    "id":  "e53d0e7a-f708-4710-bc35-f11f4d42643a",
+    "redirect_uris":  [
+                          "http://localhost/redirect"
+                      ],
+    "grant_types":  [
+                        "authorization_code"
+                    ],
+    "scope":  "openid a89c1475-03f2-417a-be83-9974c223b5d7",
+    "client_id":  "2af1c7c9-04dc-40d0-abac-103cee2a821d",
+    "client_secret":  null
+}

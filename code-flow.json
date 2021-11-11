@@ -1,0 +1,13 @@
+{
+    "id":  "c46da299-bb68-4774-88db-84057793ff61",
+    "code_challenge_method":  "S256",
+    "redirect_uris":  [
+                          "http://localhost/redirect"
+                      ],
+    "grant_types":  [
+                        "authorization_code"
+                    ],
+    "scope":  "openid a89c1475-03f2-417a-be83-9974c223b5d7",
+    "client_id":  "69ba19c4-0364-41ae-bdd5-17cdef4efd52",
+    "client_secret":  "qsncVp3rCcmNK435SU9qnic5EZLAGpli"
+}
