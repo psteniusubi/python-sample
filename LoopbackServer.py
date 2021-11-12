@@ -35,7 +35,7 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             httpd.authorization_response = parse_qs(r.query)
-            #logging.debug(self.path)
+            # logging.debug(self.path)
             return
 
         # any other request generates authorization request
@@ -43,7 +43,7 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(302)
         self.send_header("Location", url)
         self.end_headers()
-        #logging.debug(str(url))
+        # logging.debug(str(url))
 
 
 class LoopbackServer(http.server.HTTPServer):

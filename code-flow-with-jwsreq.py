@@ -6,6 +6,11 @@ import uuid
 from datetime import datetime, timedelta
 from jwcrypto import jwt, jwk
 from LoopbackServer import LoopbackServer
+import logging
+
+# logging
+
+logging.basicConfig(level=logging.INFO)
 
 # provider discovery
 
@@ -58,12 +63,17 @@ for k in client_jwks:
 
 # http server
 
+
 class JwsreqServer(LoopbackServer):
     def authorization_request_params(self):
         params = super().authorization_request_params()
-        params["sub"] = self.client["client_id"]
         params["iss"] = self.client["client_id"]
-        params["aud"] = (self.provider["issuer"], self.provider["token_endpoint"], self.provider["authorization_endpoint"])
+        params["sub"] = self.client["client_id"]
+        params["aud"] = (self.provider["issuer"], self.provider["token_endpoint"],
+                         self.provider["authorization_endpoint"])
+        params["exp"] = int(
+            (datetime.now() + timedelta(minutes=10)).timestamp())
+        params["jti"] = str(uuid.uuid4())
         # request object, signed and encrypted
         token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
                         "kid": client_jwk_sig.key_id}, claims=params)
@@ -76,6 +86,7 @@ class JwsreqServer(LoopbackServer):
         }
 
 # create and start http server
+
 
 with JwsreqServer(provider, client) as httpd:
     # launch web browser
@@ -136,6 +147,6 @@ id_token = json.loads(token.claims)
 # verify nonce
 
 if httpd.nonce != id_token["nonce"]:
-    raise Exception("invalid state")
+    raise Exception("invalid nonce")
 
 print(json.dumps(id_token, indent=2))
