@@ -7,6 +7,20 @@ This repository contains two Python sample scripts for OpenID Connect integratio
 * [code-flow.py](code-flow.py) implements most simple code flow sequence without any JWT cryptograhic operations. It first runs basic code flow, then fetches claims from userinfo endpoint.
 * [code-flow-with-jwsreq.py](code-flow-with-jwsreq.py) is more advanced with [JWT-secured authorization request](https://datatracker.ietf.org/doc/html/rfc9101), [JWT client authentication](https://datatracker.ietf.org/doc/html/rfc7523#section-2.2) and [encrypted ID Token](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
 
+### Scope
+
+This application shows how to get an access token using authorization code flow from a "native app" such as a command line tool. This is not a traditional web application with a browser based ui.
+
+There are a number of existing OpenID Connect libraries and tools for Python that could be used to achieve what this application does. However my intent is to show how OpenID Connect works more than showing how to use a particular library. 
+
+### Dependencies
+
+Run the following command before running this application to make sure required dependencies are installed 
+
+```text
+pip install requests jwcrypto urllib3
+```
+
 # code-flow.py
 
 ## Configuration
