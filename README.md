@@ -18,7 +18,7 @@ There are a number of existing OpenID Connect libraries and tools for Python tha
 Run the following command before running this application to make sure required dependencies are installed 
 
 ```text
-pip install requests jwcrypto urllib3
+pip install requests jwcrypto 
 ```
 
 # code-flow.py
