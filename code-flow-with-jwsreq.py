@@ -76,10 +76,10 @@ class JwsreqServer(LoopbackServer):
         params["jti"] = str(uuid.uuid4())
         # request object, signed and encrypted
         token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
-                        "kid": client_jwk_sig.key_id}, claims=params)
+                        "kid": client_jwk_sig.kid}, claims=params)
         token.make_signed_token(client_jwk_sig)
         token = jwt.JWT(header={"alg": "RSA-OAEP", "enc": "A128GCM", "cty": "JWT",
-                        "kid": provider_jwk_enc.key_id}, claims=token.serialize())
+                        "kid": provider_jwk_enc.kid}, claims=token.serialize())
         token.make_encrypted_token(provider_jwk_enc)
         return {
             "request": token.serialize()
@@ -116,7 +116,7 @@ claims = {
     "jti": str(uuid.uuid4())
 }
 token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
-                "kid": client_jwk_sig.key_id}, claims=claims)
+                "kid": client_jwk_sig.kid}, claims=claims)
 token.make_signed_token(client_jwk_sig)
 
 # token request with authorization code
