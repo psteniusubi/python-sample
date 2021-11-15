@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from urllib.parse import urlencode
 from urllib.parse import parse_qs
 from base64 import urlsafe_b64encode
-from random import Random
+import os
 from hashlib import sha256
 import logging
 
@@ -84,7 +84,7 @@ class LoopbackServer(http.server.HTTPServer):
 
     def generate_code_challenge(self):
         self.code_verifier = urlsafe_b64encode(
-            Random().randbytes(32)).rstrip(b'=')
+            os.urandom(32)).rstrip(b'=')
         return urlsafe_b64encode(sha256(self.code_verifier).digest()).rstrip(b'=')
 
     def authorization_request_params(self):
