@@ -68,7 +68,6 @@ class JwsreqServer(LoopbackServer):
     def authorization_request_params(self):
         params = super().authorization_request_params()
         params["iss"] = self.client["client_id"]
-        params["sub"] = self.client["client_id"]
         params["aud"] = (self.provider["issuer"], self.provider["token_endpoint"],
                          self.provider["authorization_endpoint"])
         params["exp"] = int(
