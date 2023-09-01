@@ -2,18 +2,32 @@ from jwcrypto import jwk
 from os.path import exists
 import json
 import uuid
+import argparse
+
+# command arguments
+# --client-jwks|-j
+# --new
+
+DEFAULT_CLIENT_JWKS = "code-flow-with-jwsreq.jwk"
+
+parser = argparse.ArgumentParser(description='OpenID Connect client')
+parser.add_argument("-j", "--client-jwks", default=DEFAULT_CLIENT_JWKS,
+                    help=f"OpenID Relying Party jwks, default {DEFAULT_CLIENT_JWKS}")
+parser.add_argument(
+    "--new", help="Always generate new jwks", action="store_true")
+args = parser.parse_args()
 
 # read or create jwsreq.jwk
 
 jwks = None
-if exists("code-flow-with-jwsreq.jwk"):
-    with open("code-flow-with-jwsreq.jwk", "r", encoding="utf-8-sig") as fp:
+if exists(args.client_jwks) and not args.new:
+    with open(args.client_jwks, "r", encoding="utf-8-sig") as fp:
         jwks = jwk.JWKSet.from_json(fp.read())
 else:
     jwks = jwk.JWKSet()
     jwks.add(jwk.JWK(generate='RSA', use='sig', kid=str(uuid.uuid4())))
     jwks.add(jwk.JWK(generate='RSA', use='enc', kid=str(uuid.uuid4())))
-    with open("code-flow-with-jwsreq.jwk", "w", encoding="utf-8") as fp:
+    with open(args.client_jwks, "w", encoding="utf-8") as fp:
         fp.write(jwks.export(private_keys=True))
 
 # construct oauth/oidc client registration request, with following settings
