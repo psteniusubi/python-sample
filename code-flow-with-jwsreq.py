@@ -7,15 +7,52 @@ from datetime import datetime, timedelta
 from jwcrypto import jwt, jwk
 from LoopbackServer import LoopbackServer
 import logging
+import argparse
+
+# command arguments
+# --provider|-p
+# --openid-configuration|-o
+# --client-configuration|-c
+# --client-jwks|-j
+# --scope|-s
+# --acr-values|-a
+# --ui-locales|-l
+# --ftn-spname|-n
+# --verbose
+
+DEFAULT_PROVIDER = "https://login.example.ubidemo.com/uas"
+DEFAULT_CLIENT_CONFIGURATION = "code-flow-with-jwsreq.json"
+DEFAULT_CLIENT_JWKS = "code-flow-with-jwsreq.jwk"
+
+parser = argparse.ArgumentParser(description='OpenID Connect client')
+parser.add_argument("-p", "--provider", default=DEFAULT_PROVIDER,
+                    help=f"Name of OpenID Provider, default {DEFAULT_PROVIDER}")
+parser.add_argument("-o", "--openid-configuration",
+                    help=f"OpenID Provider metadata, default derived from --provider argument {DEFAULT_PROVIDER}/.well-known/openid-configuration")
+parser.add_argument("-c", "--client-configuration", default=DEFAULT_CLIENT_CONFIGURATION,
+                    help=f"OpenID Relying Party configuration, default {DEFAULT_CLIENT_CONFIGURATION}")
+parser.add_argument("-j", "--client-jwks", default=DEFAULT_CLIENT_JWKS,
+                    help=f"OpenID Relying Party jwks, default {DEFAULT_CLIENT_JWKS}")
+parser.add_argument(
+    "-s", "--scope", help="Scope value, default either from client configuration or value openid")
+parser.add_argument("-a", "--acr-values", help="ACR value")
+parser.add_argument("-l", "--ui-locales", help="User interface locale")
+parser.add_argument("-n", "--ftn-spname", help="FTN application name")
+parser.add_argument("--verbose", help="Verbose output", action="store_true")
+args = parser.parse_args()
+if args.openid_configuration is None:
+    args.openid_configuration = f"{args.provider}/.well-known/openid-configuration"
 
 # logging
 
-logging.basicConfig(level=logging.INFO)
+if args.verbose:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
 
 # provider discovery
 
-r = requests.get(
-    "https://login.example.ubidemo.com/uas/.well-known/openid-configuration")
+r = requests.get(args.openid_configuration)
 r.raise_for_status()
 provider = r.json()
 
@@ -37,11 +74,17 @@ for k in provider_jwks:
 
 # client configuration
 
-with open("code-flow-with-jwsreq.json", "r", encoding="utf-8-sig") as fp:
+with open(args.client_configuration, "r", encoding="utf-8-sig") as fp:
     client = json.loads(fp.read())
 
-with open("code-flow-with-jwsreq.jwk", "r", encoding="utf-8-sig") as fp:
+with open(args.client_jwks, "r", encoding="utf-8-sig") as fp:
     client_jwks = jwk.JWKSet.from_json(fp.read())
+
+if args.scope is None:
+    if "scope" in client:
+        args.scope = client["scope"]
+    else:
+        args.scope = "openid"
 
 client_jwk_sig = None
 client_jwk_enc = None
@@ -73,6 +116,7 @@ class JwsreqServer(LoopbackServer):
         params["exp"] = int(
             (datetime.now() + timedelta(minutes=10)).timestamp())
         params["jti"] = str(uuid.uuid4())
+        logging.debug(f"authorization_request_params = {params}")
         # request object, signed and encrypted
         token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
                         "kid": client_jwk_sig.kid}, claims=params)
@@ -87,7 +131,7 @@ class JwsreqServer(LoopbackServer):
 # create and start http server
 
 
-with JwsreqServer(provider, client) as httpd:
+with JwsreqServer(provider, client, vars(args)) as httpd:
     # launch web browser
     print(httpd.base_uri)
     webbrowser.open(httpd.base_uri)
@@ -114,6 +158,7 @@ claims = {
     "exp": int((datetime.now() + timedelta(minutes=10)).timestamp()),
     "jti": str(uuid.uuid4())
 }
+logging.debug(f'client_assertion_claims = {claims}')
 token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
                 "kid": client_jwk_sig.kid}, claims=claims)
 token.make_signed_token(client_jwk_sig)
@@ -129,8 +174,11 @@ body = {
     "code": httpd.authorization_response["code"][0],
     "code_verifier": httpd.code_verifier.decode("utf-8")
 }
+logging.debug(f'token_request_params = {body}')
+logging.debug(f'token_request = {provider["token_endpoint"]}')
 r = requests.post(provider["token_endpoint"], data=body)
 token_response = r.json()
+logging.debug(f'token_response = {token_response}')
 
 # handles error from token response
 
@@ -148,4 +196,4 @@ id_token = json.loads(token.claims)
 if httpd.nonce != id_token["nonce"]:
     raise Exception("invalid nonce")
 
-print(json.dumps(id_token, indent=2))
+logging.info(json.dumps(id_token, indent=2))

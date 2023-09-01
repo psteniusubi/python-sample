@@ -6,16 +6,27 @@ import logging
 import argparse
 
 # command arguments
-# --provider|-p --openid-configuration|-o --client-configuration|-c --scope|-s --acr-values|-a --ui-locales|-l --ftn-spname|-n
+# --provider|-p
+# --openid-configuration|-o
+# --client-configuration|-c
+# --scope|-s
+# --acr-values|-a
+# --ui-locales|-l
+# --ftn-spname|-n
+# --verbose
 
 DEFAULT_PROVIDER = "https://login.example.ubidemo.com/uas"
 DEFAULT_CLIENT_CONFIGURATION = "code-flow.json"
 
 parser = argparse.ArgumentParser(description='OpenID Connect client')
-parser.add_argument("-p", "--provider", default=DEFAULT_PROVIDER, help=f"Name of OpenID Provider, default {DEFAULT_PROVIDER}")
-parser.add_argument("-o", "--openid-configuration", help=f"OpenID Provider metadata, default derived from --provider argument {DEFAULT_PROVIDER}/.well-known/openid-configuration")
-parser.add_argument("-c", "--client-configuration", default=DEFAULT_CLIENT_CONFIGURATION, help=f"OpenID Relying Party configuration, default {DEFAULT_CLIENT_CONFIGURATION}")
-parser.add_argument("-s", "--scope", help="Scope value, default either from client configuration or value openid")
+parser.add_argument("-p", "--provider", default=DEFAULT_PROVIDER,
+                    help=f"Name of OpenID Provider, default {DEFAULT_PROVIDER}")
+parser.add_argument("-o", "--openid-configuration",
+                    help=f"OpenID Provider metadata, default derived from --provider argument {DEFAULT_PROVIDER}/.well-known/openid-configuration")
+parser.add_argument("-c", "--client-configuration", default=DEFAULT_CLIENT_CONFIGURATION,
+                    help=f"OpenID Relying Party configuration, default {DEFAULT_CLIENT_CONFIGURATION}")
+parser.add_argument(
+    "-s", "--scope", help="Scope value, default either from client configuration or value openid")
 parser.add_argument("-a", "--acr-values", help="ACR value")
 parser.add_argument("-l", "--ui-locales", help="User interface locale")
 parser.add_argument("-n", "--ftn-spname", help="FTN application name")
@@ -23,6 +34,8 @@ parser.add_argument("--verbose", help="Verbose output", action="store_true")
 args = parser.parse_args()
 if args.openid_configuration is None:
     args.openid_configuration = f"{args.provider}/.well-known/openid-configuration"
+
+# logging
 
 if args.verbose:
     logging.basicConfig(level=logging.DEBUG)
@@ -93,12 +106,16 @@ body = {
     "code": httpd.authorization_response["code"][0],
     "code_verifier": httpd.code_verifier.decode("utf-8")
 }
+logging.debug(f'token_request_params = {body}')
 auth = (
     client["client_id"],
     client["client_secret"]
 )
+logging.debug(f'token_request_auth = {auth}')
+logging.debug(f'token_request = {provider["token_endpoint"]}')
 r = requests.post(provider["token_endpoint"], data=body, auth=auth)
 token_response = r.json()
+logging.debug(f'token_response = {token_response}')
 
 # handles error from token response
 

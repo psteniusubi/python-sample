@@ -28,6 +28,7 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
 
         # handles authorization response
         if r.path == httpd.redirect_path:
+            logging.debug(f"authorization_response = {self.path}")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             body = html.encode("utf-8")
