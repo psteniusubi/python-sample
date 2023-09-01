@@ -49,11 +49,10 @@ Sample configuration response from OpenID Provider. Put this into [code-flow.jso
 }
 ```
 
-In [code-flow.py](code-flow.py#L14) replace address with your OpenID Provider's configuration metadata address.
+Specify your OpenID Provider's configuration metadata address on the command line
 
-```py
-r = requests.get(
-    "https://login.example.ubidemo.com/uas/.well-known/openid-configuration")
+```
+python code-flow.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
 
 ## Code review
@@ -70,7 +69,7 @@ TODO
 
 The configuration in [code-flow.json](code-flow.json) is ready configured to access Ubisecure SSO at login.example.ubidemo.com
 
-```text
+```
 python code-flow.py
 ```
 
@@ -80,11 +79,10 @@ python code-flow.py
 
 ### Generate new key pair and configuration request
 
-To generate new key pair first remove the file [code-flow-with-jwsreq.jwk](code-flow-with-jwsreq.jwk), then run [generate-jwsreq-registration-request.py](generate-jwsreq-registration-request.py).
+Run [generate-jwsreq-registration-request.py](generate-jwsreq-registration-request.py) to generate a new key pair and configuration request.
 
-```text
-rm code-flow-with-jwsreq.jwk
-python generate-jwsreq-registration-request.py 
+```
+python generate-jwsreq-registration-request.py --new
 ```
 
 The command will output a configuration request that you can send to your OpenID Provider. The configuration request contains settings to enable JWT secured request, JWT client authentication and encrypted ID token. If your OpenID Provider does not accept configuration request then you need to make sure the provider is configured with these features enabled. 
@@ -140,7 +138,7 @@ If not then create configuration response manually with the client id from your 
 
 Sample configuration response from OpenID Provider. Put this into [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json)
 
-```py
+```json
 {
     "redirect_uris":  [
                           "http://localhost/redirect"
@@ -149,11 +147,10 @@ Sample configuration response from OpenID Provider. Put this into [code-flow-wit
 }
 ```
 
-In [code-flow.py](code-flow.py#L14) replace address with your OpenID Provider's configuration metadata address.
+Specify your OpenID Provider's configuration metadata address on the command line
 
-```py
-r = requests.get(
-    "https://login.example.ubidemo.com/uas/.well-known/openid-configuration")
+```
+python code-flow-with-jwsreq.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
 
 ## Code review
@@ -166,6 +163,6 @@ TODO
 
 The configuration in [code-flow-with-jwsreq.jwk](code-flow-with-jwsreq.jwk) and [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json) is ready configured to access Ubisecure SSO at login.example.ubidemo.com
 
-```text
+```
 python code-flow-with-jwsreq.py
 ```
