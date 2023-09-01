@@ -47,11 +47,12 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
 
 
 class LoopbackServer(http.server.HTTPServer):
-    def __init__(self, provider, client):
+    def __init__(self, provider, client, args={}):
         super().__init__(("127.0.0.1", 0), LoopbackHandler)
         # configuration
         self.provider = provider
         self.client = client
+        self.args = args
         # state
         self.state = None
         # nonce
@@ -82,6 +83,14 @@ class LoopbackServer(http.server.HTTPServer):
     def redirect_uri(self):
         return self.base_uri + self.redirect_path
 
+    @property
+    def scope(self):
+        if "scope" in self.args:
+            return self.args["scope"]
+        if "scope" in self.client:
+            return self.client["scope"]        
+        return "openid"
+
     def generate_code_challenge(self):
         self.code_verifier = urlsafe_b64encode(
             os.urandom(32)).rstrip(b'=')
@@ -91,18 +100,24 @@ class LoopbackServer(http.server.HTTPServer):
         code_challenge = self.generate_code_challenge()
         self.state = str(uuid.uuid4())
         self.nonce = str(uuid.uuid4())
-        return {
+        params = {
             "response_type": "code",
             "client_id": self.client["client_id"],
-            "scope": self.client["scope"],
+            "scope": self.scope,
             "redirect_uri": self.redirect_uri,
             "code_challenge": code_challenge.decode("utf-8"),
             "code_challenge_method": "S256",
             "state": self.state,
             "nonce": self.nonce
         }
+        for i in "scope","acr_values","ui_locales","ftn_spname":
+            if i in self.args and self.args[i] is not None:
+                params[i]=self.args[i]
+        return params
 
     def authorization_request(self):
         params = self.authorization_request_params()
+        logging.debug(f"authorization_request_params = {params}")
         url = self.provider["authorization_endpoint"] + "?" + urlencode(params)
+        logging.debug(f"authorization_request = {url}")
         return url
