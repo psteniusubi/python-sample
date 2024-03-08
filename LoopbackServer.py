@@ -7,6 +7,7 @@ from base64 import urlsafe_b64encode
 import os
 from hashlib import sha256
 import logging
+from oidc_common import OpenIDConfiguration, ClientConfiguration
 
 # html page when browser invokes authorization response
 
@@ -48,7 +49,9 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
 
 
 class LoopbackServer(http.server.HTTPServer):
-    def __init__(self, provider, client, args={}):
+    def __init__(
+        self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
+    ):
         super().__init__(("127.0.0.1", 0), LoopbackHandler)
         # configuration
         self.provider = provider
@@ -77,25 +80,16 @@ class LoopbackServer(http.server.HTTPServer):
 
     @property
     def redirect_path(self):
-        r = urlsplit(self.client["redirect_uris"][0])
+        r = urlsplit(self.client.redirect_uri)
         return r.path
 
     @property
     def redirect_uri(self):
         return self.base_uri + self.redirect_path
 
-    @property
-    def scope(self):
-        if "scope" in self.args:
-            return self.args["scope"]
-        if "scope" in self.client:
-            return self.client["scope"]        
-        return "openid"
-
     def generate_code_challenge(self):
-        self.code_verifier = urlsafe_b64encode(
-            os.urandom(32)).rstrip(b'=')
-        return urlsafe_b64encode(sha256(self.code_verifier).digest()).rstrip(b'=')
+        self.code_verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+        return urlsafe_b64encode(sha256(self.code_verifier).digest()).rstrip(b"=")
 
     def authorization_request_params(self):
         code_challenge = self.generate_code_challenge()
@@ -103,22 +97,22 @@ class LoopbackServer(http.server.HTTPServer):
         self.nonce = str(uuid.uuid4())
         params = {
             "response_type": "code",
-            "client_id": self.client["client_id"],
-            "scope": self.scope,
+            "client_id": self.client.client_id,
+            "scope": self.client.scope,
             "redirect_uri": self.redirect_uri,
             "code_challenge": code_challenge.decode("utf-8"),
             "code_challenge_method": "S256",
             "state": self.state,
-            "nonce": self.nonce
+            "nonce": self.nonce,
         }
-        for i in "scope","acr_values","ui_locales","ftn_spname":
+        for i in "scope", "acr_values", "ui_locales", "ftn_spname":
             if i in self.args and self.args[i] is not None:
-                params[i]=self.args[i]
+                params[i] = self.args[i]
         return params
 
     def authorization_request(self):
         params = self.authorization_request_params()
         logging.debug(f"authorization_request_params = {params}")
-        url = self.provider["authorization_endpoint"] + "?" + urlencode(params)
+        url = self.provider.authorization_endpoint + "?" + urlencode(params)
         logging.debug(f"authorization_request = {url}")
         return url

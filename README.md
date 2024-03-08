@@ -97,6 +97,7 @@ A sample configuration request
   "request_object_encryption_alg": "RSA-OAEP",
   "token_endpoint_auth_method": "private_key_jwt",
   "token_endpoint_auth_signing_alg": "RS256",
+  "id_token_signed_response_alg": "RS256",
   "id_token_encrypted_response_alg": "RSA-OAEP",
   "userinfo_signed_response_alg": "RS256",
   "userinfo_encrypted_response_alg": "RSA-OAEP",

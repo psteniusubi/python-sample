@@ -43,6 +43,7 @@ request = {
     "request_object_encryption_alg":  "RSA-OAEP",
     "token_endpoint_auth_method":  "private_key_jwt",
     "token_endpoint_auth_signing_alg": "RS256",
+    "id_token_signed_response_alg": "RS256",
     "id_token_encrypted_response_alg":  "RSA-OAEP",
     "userinfo_signed_response_alg":  "RS256",
     "userinfo_encrypted_response_alg":  "RSA-OAEP",
@@ -58,6 +59,6 @@ request = {
 
 # write registration request on console
 # - capture request and send to your indentity provider
-# - write registration response to file named jwsreq.json
+# - write registration response to file named code-flow-with-jwsreq.json
 
 print(json.dumps(request, indent=2))

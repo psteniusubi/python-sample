@@ -4,10 +4,11 @@ import webbrowser
 import json
 import uuid
 from datetime import datetime, timedelta
-from jwcrypto import jwt, jwk
+from jwcrypto import jwt, jwe
 from LoopbackServer import LoopbackServer
 import logging
 import argparse
+from oidc_common import OpenIDConfiguration, ClientConfiguration
 
 # command arguments
 # --provider|-p
@@ -24,17 +25,35 @@ DEFAULT_PROVIDER = "https://login.example.ubidemo.com/uas"
 DEFAULT_CLIENT_CONFIGURATION = "code-flow-with-jwsreq.json"
 DEFAULT_CLIENT_JWKS = "code-flow-with-jwsreq.jwk"
 
-parser = argparse.ArgumentParser(description='OpenID Connect client')
-parser.add_argument("-p", "--provider", default=DEFAULT_PROVIDER,
-                    help=f"Name of OpenID Provider, default {DEFAULT_PROVIDER}")
-parser.add_argument("-o", "--openid-configuration",
-                    help=f"OpenID Provider metadata, default derived from --provider argument {DEFAULT_PROVIDER}/.well-known/openid-configuration")
-parser.add_argument("-c", "--client-configuration", default=DEFAULT_CLIENT_CONFIGURATION,
-                    help=f"OpenID Relying Party configuration, default {DEFAULT_CLIENT_CONFIGURATION}")
-parser.add_argument("-j", "--client-jwks", default=DEFAULT_CLIENT_JWKS,
-                    help=f"OpenID Relying Party jwks, default {DEFAULT_CLIENT_JWKS}")
+parser = argparse.ArgumentParser(description="OpenID Connect client")
 parser.add_argument(
-    "-s", "--scope", help="Scope value, default either from client configuration or value openid")
+    "-p",
+    "--provider",
+    default=DEFAULT_PROVIDER,
+    help=f"Name of OpenID Provider, default {DEFAULT_PROVIDER}",
+)
+parser.add_argument(
+    "-o",
+    "--openid-configuration",
+    help=f"OpenID Provider metadata, default derived from --provider argument {DEFAULT_PROVIDER}/.well-known/openid-configuration",
+)
+parser.add_argument(
+    "-c",
+    "--client-configuration",
+    default=DEFAULT_CLIENT_CONFIGURATION,
+    help=f"OpenID Relying Party configuration, default {DEFAULT_CLIENT_CONFIGURATION}",
+)
+parser.add_argument(
+    "-j",
+    "--client-jwks",
+    default=DEFAULT_CLIENT_JWKS,
+    help=f"OpenID Relying Party jwks, default {DEFAULT_CLIENT_JWKS}",
+)
+parser.add_argument(
+    "-s",
+    "--scope",
+    help="Scope value, default either from client configuration or value openid",
+)
 parser.add_argument("-a", "--acr-values", help="ACR value")
 parser.add_argument("-l", "--ui-locales", help="User interface locale")
 parser.add_argument("-n", "--ftn-spname", help="FTN application name")
@@ -52,57 +71,13 @@ else:
 
 # provider discovery
 
-r = requests.get(args.openid_configuration)
-r.raise_for_status()
-provider = r.json()
-
-r = requests.get(provider["jwks_uri"])
-r.raise_for_status()
-provider_jwks = jwk.JWKSet.from_json(r.text)
-provider_jwk_enc = None
-
-# find provider enc key from jwks_uri
-
-for k in provider_jwks:
-    t = k.export(private_key=False, as_dict=True)
-    if "use" in t and t["use"] == "enc":
-        provider_jwk_enc = k
-        break
-    if not "use" in t:
-        provider_jwk_enc = k
-        break
+provider = OpenIDConfiguration(args.openid_configuration)
 
 # client configuration
 
-with open(args.client_configuration, "r", encoding="utf-8-sig") as fp:
-    client = json.loads(fp.read())
-
-with open(args.client_jwks, "r", encoding="utf-8-sig") as fp:
-    client_jwks = jwk.JWKSet.from_json(fp.read())
-
-if args.scope is None:
-    if "scope" in client:
-        args.scope = client["scope"]
-    else:
-        args.scope = "openid"
-
-client_jwk_sig = None
-client_jwk_enc = None
-
-# find sig and enc keys from jwsreq.jwk
-
-for k in client_jwks:
-    t = k.export(private_key=True, as_dict=True)
-    if "use" in t and t["use"] == "sig":
-        client_jwk_sig = k
-        continue
-    if "use" in t and t["use"] == "enc":
-        client_jwk_enc = k
-        continue
-    if not "use" in t:
-        client_jwk_sig = k
-        client_jwk_enc = k
-        break
+client = ClientConfiguration(
+    args.client_configuration, client_jwks=args.client_jwks, scope=args.scope
+)
 
 # http server
 
@@ -110,23 +85,43 @@ for k in client_jwks:
 class JwsreqServer(LoopbackServer):
     def authorization_request_params(self):
         params = super().authorization_request_params()
-        params["iss"] = self.client["client_id"]
-        params["aud"] = (self.provider["issuer"], self.provider["token_endpoint"],
-                         self.provider["authorization_endpoint"])
-        params["exp"] = int(
-            (datetime.now() + timedelta(minutes=10)).timestamp())
+        params["iss"] = self.client.client_id
+        params["aud"] = (
+            self.provider.issuer,
+            self.provider.token_endpoint,
+            self.provider.authorization_endpoint,
+        )
+        params["exp"] = int((datetime.now() + timedelta(minutes=10)).timestamp())
         params["jti"] = str(uuid.uuid4())
         logging.debug(f"authorization_request_params = {params}")
-        # request object, signed and encrypted
-        token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
-                        "kid": client_jwk_sig.kid}, claims=params)
-        token.make_signed_token(client_jwk_sig)
-        token = jwt.JWT(header={"alg": "RSA-OAEP", "enc": "A128GCM", "cty": "JWT",
-                        "kid": provider_jwk_enc.kid}, claims=token.serialize())
-        token.make_encrypted_token(provider_jwk_enc)
+
+        # request object - sign
+        token = jwt.JWT(
+            header={"alg": "RS256", "typ": "JWT", "kid": client.client_jwk_sig.kid},
+            claims=params,
+        )
+        token.make_signed_token(client.client_jwk_sig)
+
+        # request object - encrypt
+        if provider.provider_jwk_enc is not None:
+            token = jwt.JWT(
+                header={
+                    "alg": "RSA-OAEP",
+                    "enc": "A128GCM",
+                    "cty": "JWT",
+                    "kid": provider.provider_jwk_enc.kid,
+                },
+                claims=token.serialize(),
+            )
+            token.make_encrypted_token(provider.provider_jwk_enc)
+
         return {
-            "request": token.serialize()
+            "request": token.serialize(),
+            "response_type": params["response_type"],
+            "client_id": params["client_id"],
+            "scope": params["scope"],
         }
+
 
 # create and start http server
 
@@ -152,43 +147,56 @@ if httpd.state != httpd.authorization_response["state"][0]:
 # client assertion, signed
 
 claims = {
-    "iss": client["client_id"],
-    "sub": client["client_id"],
-    "aud": (provider["issuer"], provider["token_endpoint"]),
+    "iss": client.client_id,
+    "sub": client.client_id,
+    "aud": (provider.issuer, provider.token_endpoint),
     "exp": int((datetime.now() + timedelta(minutes=10)).timestamp()),
-    "jti": str(uuid.uuid4())
+    "jti": str(uuid.uuid4()),
 }
-logging.debug(f'client_assertion_claims = {claims}')
-token = jwt.JWT(header={"alg": "RS256", "typ": "JWT",
-                "kid": client_jwk_sig.kid}, claims=claims)
-token.make_signed_token(client_jwk_sig)
+logging.debug(f"client_assertion_claims = {claims}")
+token = jwt.JWT(
+    header={"alg": "RS256", "typ": "JWT", "kid": client.client_jwk_sig.kid},
+    claims=claims,
+)
+token.make_signed_token(client.client_jwk_sig)
 
-# token request with authorization code
+# token request with authorization code and client assertion
 
 body = {
-    "client_id": client["client_id"],
+    "client_id": client.client_id,
     "grant_type": "authorization_code",
     "redirect_uri": httpd.redirect_uri,
     "client_assertion": token.serialize(),
     "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     "code": httpd.authorization_response["code"][0],
-    "code_verifier": httpd.code_verifier.decode("utf-8")
+    "code_verifier": httpd.code_verifier.decode("utf-8"),
 }
-logging.debug(f'token_request_params = {body}')
-logging.debug(f'token_request = {provider["token_endpoint"]}')
-r = requests.post(provider["token_endpoint"], data=body)
+logging.debug(f"token_request_params = {body}")
+logging.debug(f"token_request = {provider.token_endpoint}")
+r = requests.post(provider.token_endpoint, data=body)
 token_response = r.json()
-logging.debug(f'token_response = {token_response}')
+logging.debug(f"token_response = {token_response}")
 
 # handles error from token response
 
 if "error" in token_response:
     raise Exception(token_response["error"])
 
-# id token, signed and encrypted
+# id token - decrypt
 
-token = jwt.JWT(key=client_jwk_enc, jwt=token_response["id_token"])
-token = jwt.JWT(key=provider_jwks, jwt=token.claims)
+plaintext = None
+try:
+    token = jwe.JWE.from_jose_token(token_response["id_token"])
+    token.decrypt(client.client_jwks)
+    plaintext = token.plaintext.decode("utf-8")
+    logging.debug(f"id_token = {plaintext}")
+except jwe.InvalidJWEData as e:
+    logging.debug("JWE.decrypt", e)
+    plaintext = token_response["id_token"]
+
+# id token - signature
+
+token = jwt.JWT(key=provider.provider_jwks, jwt=plaintext)
 id_token = json.loads(token.claims)
 
 # verify nonce
