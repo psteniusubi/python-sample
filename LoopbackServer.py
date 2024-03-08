@@ -8,6 +8,7 @@ import os
 from hashlib import sha256
 import logging
 from oidc_common import OpenIDConfiguration, ClientConfiguration
+from threading import Thread, Event
 
 # html page when browser invokes authorization response
 
@@ -37,6 +38,7 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             httpd.authorization_response = parse_qs(r.query)
+            httpd.done.set()
             # logging.debug(self.path)
             return
 
@@ -63,12 +65,14 @@ class LoopbackServer(http.server.HTTPServer):
         self.nonce = None
         # holds authorization response
         self.authorization_response = None
+        # event to signal shutdown
+        self.done = Event()
         # dynamic port with loopback handler
         self.__port = self.socket.getsockname()[1]
 
     @property
     def active(self):
-        return self.authorization_response is None
+        return self.authorization_response is None or not self.done.is_set()
 
     @property
     def port(self):
@@ -116,3 +120,22 @@ class LoopbackServer(http.server.HTTPServer):
         url = self.provider.authorization_endpoint + "?" + urlencode(params)
         logging.debug(f"authorization_request = {url}")
         return url
+
+    def server_thread(self):
+        while self.active:
+            self.timeout = 0.5
+            try:
+                self.handle_request()
+            except:
+                pass
+
+    def wait_authorization_response(self):
+        t = Thread(
+            name="LoopbackServer", target=lambda: self.server_thread(), daemon=True
+        )
+        t.start()
+        try:
+            self.done.wait()
+        except KeyboardInterrupt:
+            self.done.set()
+        return self.authorization_response

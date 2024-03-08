@@ -9,6 +9,8 @@ from LoopbackServer import LoopbackServer
 import logging
 import argparse
 from oidc_common import OpenIDConfiguration, ClientConfiguration
+from input import start_input_thread
+import sys
 
 # command arguments
 # --provider|-p
@@ -130,9 +132,11 @@ with JwsreqServer(provider, client, vars(args)) as httpd:
     # launch web browser
     print(httpd.base_uri)
     webbrowser.open(httpd.base_uri)
+    # wait for input
+    start_input_thread("Press enter to stop\r\n", httpd.done)
     # process http requests until authorization response is received
-    while httpd.active:
-        httpd.handle_request()
+    if httpd.wait_authorization_response() is None:
+        sys.exit()
 
 # handles error from authorization response
 
