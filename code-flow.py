@@ -47,7 +47,11 @@ parser.add_argument(
 )
 parser.add_argument("-a", "--acr-values", help="ACR value")
 parser.add_argument("-l", "--ui-locales", help="User interface locale")
-parser.add_argument("-n", "--ftn-spname", help="FTN application name")
+parser.add_argument("--login-hint", help="Login identifier")
+parser.add_argument("--prompt", help="Prompt for reauthentication")
+parser.add_argument("--max-age", help="Maximum authentication age")
+parser.add_argument("-n", "--ftn-spname", help="FTN application name (FTN extension)")
+parser.add_argument("--template", help="User interface template name (SSO extension)")
 parser.add_argument("--verbose", help="Verbose output", action="store_true")
 args = parser.parse_args()
 if args.openid_configuration is None:

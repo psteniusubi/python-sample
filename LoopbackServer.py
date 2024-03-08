@@ -109,7 +109,16 @@ class LoopbackServer(http.server.HTTPServer):
             "state": self.state,
             "nonce": self.nonce,
         }
-        for i in "scope", "acr_values", "ui_locales", "ftn_spname":
+        for i in (
+            "scope",
+            "acr_values",
+            "ui_locales",
+            "login_hint",
+            "prompt",
+            "max_age",
+            "ftn_spname",
+            "template",
+        ):
             if i in self.args and self.args[i] is not None:
                 params[i] = self.args[i]
         return params
