@@ -121,12 +121,11 @@ class JwsreqServer(LoopbackServer):
             )
             token.make_encrypted_token(provider.provider_jwk_enc)
 
-        return {
-            "request": token.serialize(),
-            "response_type": params["response_type"],
-            "client_id": params["client_id"],
-            "scope": params["scope"],
-        }
+        p = {"request": token.serialize()}
+        for i in ("response_type", "client_id", "scope", "template"):
+            if i in params and params[i] is not None:
+                p[i] = params[i]
+        return p
 
 
 # create and start http server
