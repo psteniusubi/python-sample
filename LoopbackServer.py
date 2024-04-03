@@ -54,7 +54,7 @@ class LoopbackServer(http.server.HTTPServer):
     def __init__(
         self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
     ):
-        super().__init__(("127.0.0.1", 0), LoopbackHandler)
+        super().__init__(("localhost", 0), LoopbackHandler)
         # configuration
         self.provider = provider
         self.client = client
