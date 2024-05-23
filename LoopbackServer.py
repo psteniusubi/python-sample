@@ -9,6 +9,7 @@ from hashlib import sha256
 import logging
 from oidc_common import OpenIDConfiguration, ClientConfiguration
 from threading import Thread, Event
+import socket
 
 # html page when browser invokes authorization response
 
@@ -54,6 +55,7 @@ class LoopbackServer(http.server.HTTPServer):
     def __init__(
         self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
     ):
+        self.address_family = socket.AF_INET6
         super().__init__(("localhost", 0), LoopbackHandler)
         # configuration
         self.provider = provider
