@@ -3,7 +3,7 @@ import logging
 import requests
 import json
 import re
-from jwcrypto import jwk
+from jwcrypto import jwk, jwt
 
 
 def find_jwk_by_use(jwks: jwk.JWKSet, use: str) -> jwk.JWK:
@@ -106,3 +106,60 @@ class ClientConfiguration:
         if "redirect_uris" not in self.client:
             raise Exception("missing redirect_uris")
         return self.client["redirect_uris"][0]
+
+    def sign_request_object(self, provider, params):
+        alg = "RS256"
+        if "request_object_signing_alg" in self.client:
+            alg = self.client["request_object_signing_alg"]
+            if alg == "none":
+                raise Exception("request_object_signing_alg is none")
+            if alg is None:
+                alg = "RS256"
+        token = jwt.JWT(
+            header={"alg": alg, "typ": "JWT", "kid": self.client_jwk_sig.kid},
+            claims=params,
+        )
+        token.make_signed_token(self.client_jwk_sig)
+        return token
+
+    def encrypt_request_object(self, provider, token):
+        if provider.provider_jwk_enc is None:
+            return token
+        alg = None
+        if "request_object_encryption_alg" in self.client:
+            alg = self.client["request_object_encryption_alg"]
+            if alg == "none":
+                alg = None
+        enc = "A128GCM"
+        if "request_object_encryption_enc" in self.client:
+            enc = self.client["request_object_encryption_enc"]
+            if enc == "none":
+                enc = None
+        if alg is None or enc is None:
+            return token
+        token = jwt.JWT(
+            header={
+                "alg": alg,
+                "enc": enc,
+                "cty": "JWT",
+                "kid": provider.provider_jwk_enc.kid,
+            },
+            claims=token.serialize(),
+        )
+        token.make_encrypted_token(provider.provider_jwk_enc)
+        return token
+
+    def sign_client_assertion(self, provider, claims):
+        alg = "RS256"
+        if "token_endpoint_auth_signing_alg" in self.client:
+            alg = self.client["token_endpoint_auth_signing_alg"]
+            if alg == "none":
+                raise Exception("token_endpoint_auth_signing_alg is none")
+            if alg is None:
+                alg = "RS256"
+        token = jwt.JWT(
+            header={"alg": alg, "typ": "JWT", "kid": self.client_jwk_sig.kid},
+            claims=claims,
+        )
+        token.make_signed_token(self.client_jwk_sig)
+        return token

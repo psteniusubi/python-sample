@@ -1,4 +1,3 @@
-from urllib.parse import urlencode
 import requests
 import webbrowser
 import json
@@ -102,26 +101,13 @@ class JwsreqServer(LoopbackServer):
         logging.debug(f"authorization_request_params = {params}")
 
         # request object - sign
-        token = jwt.JWT(
-            header={"alg": "RS256", "typ": "JWT", "kid": client.client_jwk_sig.kid},
-            claims=params,
-        )
-        token.make_signed_token(client.client_jwk_sig)
+        token = client.sign_request_object(provider, params)
 
         # request object - encrypt
-        if provider.provider_jwk_enc is not None:
-            token = jwt.JWT(
-                header={
-                    "alg": "RSA-OAEP",
-                    "enc": "A128GCM",
-                    "cty": "JWT",
-                    "kid": provider.provider_jwk_enc.kid,
-                },
-                claims=token.serialize(),
-            )
-            token.make_encrypted_token(provider.provider_jwk_enc)
+        token = client.encrypt_request_object(provider, token)
 
         p = {"request": token.serialize()}
+        # request object - copy signed parameters to request parameters
         for i in ("response_type", "client_id", "scope", "template"):
             if i in params and params[i] is not None:
                 p[i] = params[i]
@@ -161,11 +147,7 @@ claims = {
     "jti": str(uuid.uuid4()),
 }
 logging.debug(f"client_assertion_claims = {claims}")
-token = jwt.JWT(
-    header={"alg": "RS256", "typ": "JWT", "kid": client.client_jwk_sig.kid},
-    claims=claims,
-)
-token.make_signed_token(client.client_jwk_sig)
+token = client.sign_client_assertion(provider, claims)
 
 # token request with authorization code and client assertion
 
