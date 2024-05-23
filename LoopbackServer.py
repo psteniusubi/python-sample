@@ -55,7 +55,8 @@ class LoopbackServer(http.server.HTTPServer):
     def __init__(
         self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
     ):
-        self.address_family = socket.AF_INET6
+        if socket.has_ipv6:
+            self.address_family = socket.AF_INET6
         super().__init__(("localhost", 0), LoopbackHandler)
         # configuration
         self.provider = provider
