@@ -51,7 +51,7 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
         # logging.debug(str(url))
 
 
-class LoopbackServer(http.server.HTTPServer):
+class LoopbackServer(http.server.ThreadingHTTPServer):
     def __init__(
         self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
     ):
