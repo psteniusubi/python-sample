@@ -7,22 +7,31 @@ import argparse
 from oidc_common import OpenIDConfiguration, ClientConfiguration
 from jwcrypto import jwt
 import sys
+import os
 from input import start_input_thread
 
 # command arguments
+# --browser|-b
 # --provider|-p
 # --openid-configuration|-o
 # --client-configuration|-c
 # --scope|-s
 # --acr-values|-a
 # --ui-locales|-l
+# --login-hint
+# --prompt
+# --max-age
 # --ftn-spname|-n
+# --template
 # --verbose
 
 DEFAULT_PROVIDER = "https://login.example.ubidemo.com/uas"
 DEFAULT_CLIENT_CONFIGURATION = "code-flow.json"
 
 parser = argparse.ArgumentParser(description="OpenID Connect client")
+parser.add_argument(
+    "-b", "--browser", default=os.getenv("BROWSER"), help="Browser command"
+)
 parser.add_argument(
     "-p",
     "--provider",
@@ -63,6 +72,13 @@ if args.verbose:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
+
+# browser
+
+if args.browser is not None:
+    webbrowser.register(
+        "browser", None, webbrowser.BackgroundBrowser(args.browser), preferred=True
+    )
 
 # provider discovery and configuration
 
