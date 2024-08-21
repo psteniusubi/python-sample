@@ -1,16 +1,16 @@
-import requests
-import webbrowser
-import json
-import uuid
 from datetime import datetime, timedelta
+from input import start_input_thread
 from jwcrypto import jwt, jwe
 from LoopbackServer import LoopbackServer
-import logging
+from oidc_common import OpenIDConfiguration, ClientConfiguration, get_client_state
 import argparse
-from oidc_common import OpenIDConfiguration, ClientConfiguration
-from input import start_input_thread
-import sys
+import json
+import logging
 import os
+import requests
+import sys
+import uuid
+import webbrowser
 
 # command arguments
 # --browser|-b
@@ -150,8 +150,7 @@ if "error" in httpd.authorization_response:
 
 # verify state
 
-if httpd.state != httpd.authorization_response["state"][0]:
-    raise Exception("invalid state")
+state = get_client_state(httpd.authorization_response)
 
 # client assertion, signed
 
@@ -174,7 +173,7 @@ body = {
     "client_assertion": token.serialize(),
     "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     "code": httpd.authorization_response["code"][0],
-    "code_verifier": httpd.code_verifier.decode("utf-8"),
+    "code_verifier": state.code_verifier,
 }
 logging.debug(f"token_request_params = {body}")
 logging.debug(f"token_request = {provider.token_endpoint}")
@@ -206,7 +205,7 @@ id_token = json.loads(token.claims)
 
 # verify nonce
 
-if httpd.nonce != id_token["nonce"]:
+if state.nonce != id_token["nonce"]:
     raise Exception("invalid nonce")
 
 logging.info(json.dumps(id_token, indent=2))

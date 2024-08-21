@@ -1,14 +1,10 @@
-import http.server
-import uuid
-from urllib.parse import urlsplit
-from urllib.parse import urlencode
-from urllib.parse import parse_qs
-from base64 import urlsafe_b64encode
-import os
-from hashlib import sha256
-import logging
-from oidc_common import OpenIDConfiguration, ClientConfiguration
+from oidc_common import OpenIDConfiguration, ClientConfiguration, ClientState
 from threading import Thread, Event
+from urllib.parse import parse_qs
+from urllib.parse import urlencode
+from urllib.parse import urlsplit
+import http.server
+import logging
 import socket
 
 # html page when browser invokes authorization response
@@ -19,7 +15,6 @@ html = """
 <p><input type="button" onclick="window.close()" value="Close"></input></p>
 </body>
 """
-
 
 class LoopbackHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -43,7 +38,13 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
             # logging.debug(self.path)
             return
 
+        if r.path == "/favicon.ico":
+            self.send_error(404)
+            self.end_headers()
+            return
+
         # any other request generates authorization request
+        logging.debug(f"GET {self.path}")
         url = httpd.authorization_request()
         self.send_response(302)
         self.send_header("Location", url)
@@ -62,10 +63,6 @@ class LoopbackServer(http.server.ThreadingHTTPServer):
         self.provider = provider
         self.client = client
         self.args = args
-        # state
-        self.state = None
-        # nonce
-        self.nonce = None
         # holds authorization response
         self.authorization_response = None
         # event to signal shutdown
@@ -94,23 +91,17 @@ class LoopbackServer(http.server.ThreadingHTTPServer):
     def redirect_uri(self):
         return self.base_uri + self.redirect_path
 
-    def generate_code_challenge(self):
-        self.code_verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
-        return urlsafe_b64encode(sha256(self.code_verifier).digest()).rstrip(b"=")
-
     def authorization_request_params(self):
-        code_challenge = self.generate_code_challenge()
-        self.state = str(uuid.uuid4())
-        self.nonce = str(uuid.uuid4())
+        state = ClientState()
         params = {
             "response_type": "code",
             "client_id": self.client.client_id,
             "scope": self.client.scope,
             "redirect_uri": self.redirect_uri,
-            "code_challenge": code_challenge.decode("utf-8"),
+            "code_challenge": state.code_challenge,
             "code_challenge_method": "S256",
-            "state": self.state,
-            "nonce": self.nonce,
+            "state": state.state,
+            "nonce": state.nonce,
         }
         for i in (
             "scope",

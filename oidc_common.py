@@ -1,9 +1,13 @@
-from typing import Any
-import logging
-import requests
-import json
-import re
+from base64 import urlsafe_b64encode
+from hashlib import sha256
 from jwcrypto import jwk, jwt
+from typing import Any
+import json
+import logging
+import os
+import re
+import requests
+import uuid
 
 
 def find_jwk_by_use(jwks: jwk.JWKSet, use: str) -> jwk.JWK:
@@ -17,6 +21,31 @@ def find_jwk_by_use(jwks: jwk.JWKSet, use: str) -> jwk.JWK:
         if not "use" in t:
             jwk = k
     return jwk
+
+
+global_state = dict()
+
+
+class ClientState:
+    def __init__(self):
+        self.state = str(uuid.uuid4())
+        self.nonce = str(uuid.uuid4())
+        verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+        self.code_challenge = (
+            urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=").decode("utf-8")
+        )
+        self.code_verifier = verifier.decode("utf-8")
+        global_state[self.state] = self
+
+
+def get_client_state(authorization_response: dict) -> ClientState:
+    s = authorization_response.get("state")
+    if s is None:
+        raise Exception("invalid state")
+    state = global_state.get(s[0])
+    if state is None:
+        raise Exception("invalid state")
+    return state
 
 
 class OpenIDConfiguration:
