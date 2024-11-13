@@ -16,6 +16,7 @@ html = """
 </body>
 """
 
+
 class LoopbackHandler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -92,17 +93,19 @@ class LoopbackServer(http.server.ThreadingHTTPServer):
         return self.base_uri + self.redirect_path
 
     def authorization_request_params(self):
-        state = ClientState()
+        state = ClientState(self.has_code_challenge_s256())
         params = {
             "response_type": "code",
             "client_id": self.client.client_id,
             "scope": self.client.scope,
             "redirect_uri": self.redirect_uri,
-            "code_challenge": state.code_challenge,
-            "code_challenge_method": "S256",
             "state": state.state,
             "nonce": state.nonce,
         }
+        # pkce
+        if state.code_challenge is not None:
+            params["code_challenge"] = state.code_challenge
+            params["code_challenge_method"] = "S256"
         for i in (
             "scope",
             "acr_values",
@@ -123,6 +126,13 @@ class LoopbackServer(http.server.ThreadingHTTPServer):
         url = self.provider.authorization_endpoint + "?" + urlencode(params)
         logging.debug(f"authorization_request = {url}")
         return url
+
+    def has_code_challenge_s256(self):
+        if True == self.client.has_code_challenge_s256():
+            return True
+        if False == self.client.has_code_challenge_s256():
+            return False
+        return self.provider.has_code_challenge_s256()
 
     def server_thread(self):
         while self.active:

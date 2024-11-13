@@ -27,14 +27,21 @@ global_state = dict()
 
 
 class ClientState:
-    def __init__(self):
+    def __init__(self, has_code_challenge: bool = True):
         self.state = str(uuid.uuid4())
         self.nonce = str(uuid.uuid4())
-        verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
-        self.code_challenge = (
-            urlsafe_b64encode(sha256(verifier).digest()).rstrip(b"=").decode("utf-8")
-        )
-        self.code_verifier = verifier.decode("utf-8")
+        # pkce
+        if has_code_challenge:
+            verifier = urlsafe_b64encode(os.urandom(32)).rstrip(b"=")
+            self.code_challenge = (
+                urlsafe_b64encode(sha256(verifier).digest())
+                .rstrip(b"=")
+                .decode("utf-8")
+            )
+            self.code_verifier = verifier.decode("utf-8")
+        else:
+            self.code_challenge = None
+            self.code_verifier = None
         global_state[self.state] = self
 
 
@@ -93,6 +100,11 @@ class OpenIDConfiguration:
             return None
         return self.provider["userinfo_endpoint"]
 
+    def has_code_challenge_s256(self) -> bool:
+        if "code_challenge_methods_supported" not in self.provider:
+            return False
+        return "S256" in self.provider["code_challenge_methods_supported"]
+
 
 class ClientConfiguration:
     client: Any = None
@@ -135,6 +147,13 @@ class ClientConfiguration:
         if "redirect_uris" not in self.client:
             raise Exception("missing redirect_uris")
         return self.client["redirect_uris"][0]
+
+    def has_code_challenge_s256(self) -> bool | None:
+        if "code_challenge_method" not in self.client:
+            return None
+        if "S256" == self.client["code_challenge_method"]:
+            return True
+        return False
 
     def sign_request_object(self, provider, params):
         alg = "RS256"
