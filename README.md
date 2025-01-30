@@ -25,7 +25,7 @@ pip install requests jwcrypto
 
 ## Configuration
 
-Configuration of this script is simple. You can use any localhost address with a path component as redirect uri, for example http://localhost/redirect. When you register this app, your OpenID Provider will return client id and secret. Put these parameters into [code-flow.json](code-flow.json)
+Configuration of this script is simple. You can use any localhost address with a path component as redirect uri, for example http://localhost/redirect. When you register this app, your OpenID Provider will return client id and secret. Put these parameters into [code-flow.json](code-flow.json). If you specify a port number with the localhost address, the loopback redirect server will bind to that specific port, otherwise any available (random) port on that address will be used.
 
 Sample configuration request
 
