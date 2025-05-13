@@ -59,7 +59,7 @@ class LoopbackServer(http.server.ThreadingHTTPServer):
     ):
         if socket.has_ipv6:
             self.address_family = socket.AF_INET6
-        super().__init__(("localhost", 0), LoopbackHandler)
+        super().__init__(("localhost", urlsplit(client.redirect_uri).port or 0), LoopbackHandler)
         # configuration
         self.provider = provider
         self.client = client
