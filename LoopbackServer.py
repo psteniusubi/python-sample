@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from urllib.parse import urlsplit
 import http.server
 import logging
-import socket
+import os
 
 # html page when browser invokes authorization response
 
@@ -53,13 +53,21 @@ class LoopbackHandler(http.server.BaseHTTPRequestHandler):
         # logging.debug(str(url))
 
 
+def get_socket_bind_addr(client: ClientConfiguration) -> tuple:
+    port = urlsplit(client.redirect_uri).port or 0
+    if os.name == "nt":
+        # use localhost on windows desktop
+        return ("localhost", port)
+    else:
+        # use any addr elsewhere
+        return ("", port)
+
+
 class LoopbackServer(http.server.ThreadingHTTPServer):
     def __init__(
         self, provider: OpenIDConfiguration, client: ClientConfiguration, args={}
     ):
-        if socket.has_ipv6:
-            self.address_family = socket.AF_INET6
-        super().__init__(("localhost", urlsplit(client.redirect_uri).port or 0), LoopbackHandler)
+        super().__init__(get_socket_bind_addr(client), LoopbackHandler)
         # configuration
         self.provider = provider
         self.client = client
