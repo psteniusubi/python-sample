@@ -15,10 +15,22 @@ There are a number of existing OpenID Connect libraries and tools for Python tha
 
 ### Dependencies
 
-Run the following command before running this application to make sure required dependencies are installed 
+The scripts have been tested on Python version 3.11 and 3.22. 
 
-```text
-pip install requests jwcrypto 
+Run the following command before running this application to make sure required Python dependencies are installed 
+
+Windows
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -U pip jwcrypto requests
+```
+
+Linux
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -U pip jwcrypto requests
 ```
 
 # code-flow.py
@@ -51,8 +63,16 @@ Sample configuration response from OpenID Provider. Put this into [code-flow.jso
 
 Specify your OpenID Provider's configuration metadata address on the command line
 
+Windows
+
+```powershell
+.\.venv\Scripts\python.exe code-flow.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
-python code-flow.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
+
+Linux
+
+```bash
+.venv/bin/python code-flow.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
 
 ## Code review
@@ -69,8 +89,16 @@ TODO
 
 The configuration in [code-flow.json](code-flow.json) is ready configured to access Ubisecure SSO at login.example.ubidemo.com
 
+Windows
+
+```powershell
+.\.venv\Scripts\python.exe code-flow.py 
 ```
-python code-flow.py
+
+Linux
+
+```bash
+.venv/bin/python code-flow.py 
 ```
 
 # code-flow-with-jwsreq.py
@@ -81,8 +109,16 @@ python code-flow.py
 
 Run [generate-jwsreq-registration-request.py](generate-jwsreq-registration-request.py) to generate a new key pair and configuration request.
 
+Windows
+
+```powershell
+.\.venv\Scripts\python.exe .\generate-jwsreq-registration-request.py --new
 ```
-python generate-jwsreq-registration-request.py --new
+
+Linux
+
+```bash
+.venv/bin/python generate-jwsreq-registration-request.py --new
 ```
 
 The command will output a configuration request that you can send to your OpenID Provider. The configuration request contains settings to enable JWT secured request, JWT client authentication and encrypted ID token. If your OpenID Provider does not accept configuration request then you need to make sure the provider is configured with these features enabled. 
@@ -150,8 +186,16 @@ Sample configuration response from OpenID Provider. Put this into [code-flow-wit
 
 Specify your OpenID Provider's configuration metadata address on the command line
 
+Windows
+
+```powershell
+.\.venv\Scripts\python.exe code-flow-with-jwsreq.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
-python code-flow-with-jwsreq.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
+
+Linux
+
+```bash
+.venv/bin/python code-flow-with-jwsreq.py --openid-configuration https://login.example.ubidemo.com/uas/.well-known/openid-configuration
 ```
 
 ## Code review
@@ -164,6 +208,14 @@ TODO
 
 The configuration in [code-flow-with-jwsreq.jwk](code-flow-with-jwsreq.jwk) and [code-flow-with-jwsreq.json](code-flow-with-jwsreq.json) is ready configured to access Ubisecure SSO at login.example.ubidemo.com
 
+Windows
+
+```powershell
+.\.venv\Scripts\python.exe code-flow-with-jwsreq.py
 ```
-python code-flow-with-jwsreq.py
+
+Linux
+
+```bash
+.venv/bin/python code-flow-with-jwsreq.py
 ```
