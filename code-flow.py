@@ -115,8 +115,10 @@ body = {
     "grant_type": "authorization_code",
     "redirect_uri": httpd.redirect_uri,
     "code": httpd.authorization_response["code"][0],
-    "code_verifier": state.code_verifier,
 }
+# pkce
+if state.code_verifier is not None:
+    body["code_verifier"] = state.code_verifier
 # client authentication
 if client.client_secret is None:
     body["client_id"] = client.client_id

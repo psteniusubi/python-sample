@@ -173,8 +173,10 @@ body = {
     "client_assertion": token.serialize(),
     "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
     "code": httpd.authorization_response["code"][0],
-    "code_verifier": state.code_verifier,
 }
+# pkce
+if state.code_verifier is not None:
+    body["code_verifier"] = state.code_verifier
 logging.debug(f"token_request_params = {body}")
 logging.debug(f"token_request = {provider.token_endpoint}")
 r = requests.post(provider.token_endpoint, data=body)
